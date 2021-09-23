@@ -4,6 +4,7 @@ import pathlib
 from datetime import datetime
 
 import njdoe
+
 # import requests
 from dotenv import load_dotenv
 from google.cloud import storage
@@ -32,19 +33,18 @@ def main():
         ssn = p["SSN/SIN"] or "000-00-0000"
         birth_date = p["Birth_Date"]
 
-        ssn1, ssn2, ssn3 = ssn.split("-")
-
-        dob_clean = datetime.strptime(birth_date, "%m/%d/%Y")
-        dob_month = dob_clean.strftime("%m")
-        dob_day = dob_clean.strftime("%d")
-        dob_year = dob_clean.strftime("%Y")
+        # ssn1, ssn2, ssn3 = ssn.split("-")
+        # dob_clean = datetime.strptime(birth_date, "%m/%d/%Y")
+        # dob_month = dob_clean.strftime("%m")
+        # dob_day = dob_clean.strftime("%d")
+        # dob_year = dob_clean.strftime("%Y")
 
         try:
             bg = njdoe.criminal_history.applicant_approval_employment_history(
-                ssn1, ssn2, ssn3, dob_month, dob_day, dob_year
+                *ssn.split("-"), *birth_date.split("/")
             )
             if bg:
-                bg["df_employee_number"] = employee_number
+                bg["employee_number"] = employee_number
 
                 data_filename = f"njdoe_backround_check_records_{employee_number}.json"
                 data_filepath = data_path / data_filename
