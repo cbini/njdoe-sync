@@ -1,66 +1,114 @@
+import datetime
 import json
 import os
 import pathlib
-from datetime import datetime
+import sys
+import traceback
+from collections import deque
 
 import njdoe
-
-# import requests
 from dotenv import load_dotenv
 from google.cloud import storage
 
 load_dotenv()
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
+ADP_MODULE_PATH = os.getenv("ADP_MODULE_PATH")
+ADP_CLIENT_ID = os.getenv("ADP_CLIENT_ID")
+ADP_CLIENT_SECRET = os.getenv("ADP_CLIENT_SECRET")
+ADP_CERT_FILEPATH = os.getenv("ADP_CERT_FILEPATH")
+ADP_KEY_FILEPATH = os.getenv("ADP_KEY_FILEPATH")
 
 PROJECT_PATH = pathlib.Path(__file__).parent.absolute()
 NOW_TIMESTAMP = datetime.datetime.now()
 NOW_DATE_ISO = NOW_TIMESTAMP.date().isoformat()
 
+sys.path.insert(0, ADP_MODULE_PATH)
+import adp
+
 
 def main():
-    data_path = PROJECT_PATH / "data"
-    if not data_path.exists():
-        data_path.mkdir(parents=True)
+    file_dir = PROJECT_PATH / "data" / "background_check"
+    if not file_dir.exists():
+        file_dir.mkdir(parents=True)
+
+    adp_client = adp.authorize(
+        ADP_CLIENT_ID, ADP_CLIENT_SECRET, ADP_CERT_FILEPATH, ADP_KEY_FILEPATH
+    )
+    adp_client.headers["Accept"] = "application/json;masked=false"
 
     gcs_client = storage.Client()
     gcs_bucket = gcs_client.bucket(GCS_BUCKET_NAME)
 
-    njdoe_export_data = [{}]
+    querystring = {
+        "$select": ",".join(
+            [
+                "workerID",
+                "person/governmentIDs",
+                "person/birthDate",
+                "customFieldGroup/stringFields",
+            ]
+        ),
+        "$filter": "workers/workAssignments/assignmentStatus/statusCode/codeValue eq 'A'",
+    }
+    all_staff = adp.get_all_records(adp_client, "/hr/v2/workers", querystring)
+    for p in all_staff:
+        worker_id = p.get("workerID").get("idValue")
+        govt_ids = p.get("person").get("governmentIDs")
+        ssn = next(
+            iter(
+                [
+                    gi.get("idValue")
+                    for gi in govt_ids
+                    if gi.get("nameCode").get("codeValue") == "SSN"
+                ]
+            ),
+            None,
+        )
 
-    for p in njdoe_export_data:
-        employee_number = p["Reference_Code"]
-        ssn = p["SSN/SIN"] or "000-00-0000"
-        birth_date = p["Birth_Date"]
+        custom_fields_str = p.get("customFieldGroup").get("stringFields")
+        employee_number = next(
+            iter(
+                [
+                    sf.get("stringValue")
+                    for sf in custom_fields_str
+                    if sf.get("nameCode").get("codeValue") == "Employee Number"
+                ]
+            ),
+            None,
+        )
 
-        # ssn1, ssn2, ssn3 = ssn.split("-")
-        # dob_clean = datetime.strptime(birth_date, "%m/%d/%Y")
-        # dob_month = dob_clean.strftime("%m")
-        # dob_day = dob_clean.strftime("%d")
-        # dob_year = dob_clean.strftime("%Y")
+        birth_date = p.get("person").get("birthDate")
+        dob = deque(birth_date.split("-"))
+        dob.rotate(-1)
+
+        if not all([employee_number, ssn, birth_date]):
+            print(f"{worker_id}\n\tMISSING DATA")
+            continue
 
         try:
-            bg = njdoe.criminal_history.applicant_approval_employment_history(
-                *ssn.split("-"), *birth_date.split("/")
+            bg = njdoe.criminal_history.get_applicant_approval_employment_history(
+                *ssn.split("-"), *dob
             )
             if bg:
+                bg["worker_id"] = worker_id
                 bg["employee_number"] = employee_number
 
-                data_filename = f"njdoe_backround_check_records_{employee_number}.json"
-                data_filepath = data_path / data_filename
-                with open(data_filepath, "w+") as f:
+                file_name = f"njdoe_backround_check_records_{employee_number}.json"
+                file_path = file_dir / file_name
+                with open(file_path, "w+") as f:
                     json.dump(bg, f)
 
-                destination_blob_name = "njdoe/" + "/".join(data_filename.parts[-2:])
+                destination_blob_name = f"njdoe/{'/'.join(file_path.parts[-2:])}"
                 blob = gcs_bucket.blob(destination_blob_name)
-                blob.upload_from_filename(data_filename)
-                print(f"\tUploaded to {destination_blob_name}!\n")
+                blob.upload_from_filename(file_path)
+                print(f"{worker_id}\n\tUploaded to {destination_blob_name}!")
             else:
-                print(
-                    "\tBG NO MATCH -", employee_number, p["First_Name"], p["Last_Name"]
-                )
-        except:
-            print("\tBG ERROR -", employee_number, p["First_Name"], p["Last_Name"])
+                print(f"{worker_id}\n\tNO MATCH")
+        except Exception as xc:
+            print(f"{worker_id}\n\tERROR")
+            print(xc)
+            print(traceback.format_exc())
 
 
 if __name__ == "__main__":
@@ -68,3 +116,4 @@ if __name__ == "__main__":
         main()
     except Exception as xc:
         print(xc)
+        print(traceback.format_exc())
