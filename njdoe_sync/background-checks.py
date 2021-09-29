@@ -40,19 +40,38 @@ def main():
     gcs_client = storage.Client()
     gcs_bucket = gcs_client.bucket(GCS_BUCKET_NAME)
 
+    print("Downloading woker data from ADP...")
     querystring = {
         "$select": ",".join(
             [
-                "workerID",
-                "person/governmentIDs",
-                "person/birthDate",
-                "customFieldGroup/stringFields",
+                "worker/person/governmentIDs",
+                "worker/person/birthDate",
+                "worker/customFieldGroup/stringFields",
+                "worker/workAssignments/homeOrganizationalUnits",
             ]
         ),
         "$filter": "workers/workAssignments/assignmentStatus/statusCode/codeValue eq 'A'",
     }
     all_staff = adp.get_all_records(adp_client, "/hr/v2/workers", querystring)
+
     for p in all_staff:
+        home_org_units = next(
+            iter([w.get("homeOrganizationalUnits") for w in p.get("workAssignments")]),
+            None,
+        )
+        business_unit = next(
+            iter(
+                [
+                    u.get("nameCode").get("codeValue")
+                    for u in home_org_units
+                    if u.get("typeCode").get("codeValue") == "Business Unit"
+                ]
+            ),
+            None,
+        )
+        if not business_unit in ["KCNA", "KIPP_TAF", "TEAM"]:
+            continue
+
         worker_id = p.get("workerID").get("idValue")
         govt_ids = p.get("person").get("governmentIDs")
         ssn = next(
@@ -66,7 +85,7 @@ def main():
             None,
         )
 
-        custom_fields_str = p.get("customFieldGroup").get("stringFields")
+        custom_fields_str = p.get("customFieldGroup").get("stringFields", [])
         employee_number = next(
             iter(
                 [
@@ -82,7 +101,7 @@ def main():
         dob = deque(birth_date.split("-"))
         dob.rotate(-1)
 
-        if not all([employee_number, ssn, birth_date]):
+        if not all([employee_number, ssn, dob]):
             print(f"{worker_id}\n\tMISSING DATA")
             continue
 
