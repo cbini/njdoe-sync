@@ -64,7 +64,7 @@ uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
 name = "cachetools"
-version = "4.2.2"
+version = "4.2.3"
 description = "Extensible memoizing collections and decorators"
 category = "main"
 optional = false
@@ -129,7 +129,7 @@ grpcio-gcp = ["grpcio-gcp (>=0.2.2)"]
 
 [[package]]
 name = "google-auth"
-version = "2.2.0"
+version = "2.2.1"
 description = "Google Authentication Library"
 category = "main"
 optional = false
@@ -512,8 +512,8 @@ black = [
     {file = "black-21.9b0.tar.gz", hash = "sha256:7de4cfc7eb6b710de325712d40125689101d21d25283eed7e9998722cf10eb91"},
 ]
 cachetools = [
-    {file = "cachetools-4.2.2-py3-none-any.whl", hash = "sha256:2cc0b89715337ab6dbba85b5b50effe2b0c74e035d83ee8ed637cf52f12ae001"},
-    {file = "cachetools-4.2.2.tar.gz", hash = "sha256:61b5ed1e22a0924aed1d23b478f37e8d52549ff8a961de2909c69bf950020cff"},
+    {file = "cachetools-4.2.3-py3-none-any.whl", hash = "sha256:6a6fa6802188ab7e77bab2db001d676e854499552b0037d999d5b9f211db5250"},
+    {file = "cachetools-4.2.3.tar.gz", hash = "sha256:0a3d3556c2c3befdbba2f93b78792c199c66201c999e97947ea0b7437758246b"},
 ]
 certifi = [
     {file = "certifi-2021.5.30-py2.py3-none-any.whl", hash = "sha256:50b1e4f8446b06f41be7dd6338db18e0990601dce795c2b1686458aa7e8fa7d8"},
@@ -536,8 +536,8 @@ google-api-core = [
     {file = "google_api_core-2.0.1-py2.py3-none-any.whl", hash = "sha256:b8ad41f72a70dd709dd13a08478936172aecf5f2d34a18ab378efa6d2d6ab575"},
 ]
 google-auth = [
-    {file = "google-auth-2.2.0.tar.gz", hash = "sha256:4fa902dd577169dab41881db2b01293a41f3600d1520e4896eaaeb26e72c6eb9"},
-    {file = "google_auth-2.2.0-py2.py3-none-any.whl", hash = "sha256:c4b177443571b282dfc9236ec747da6e28669257efdb622a3b48daeaa0891442"},
+    {file = "google-auth-2.2.1.tar.gz", hash = "sha256:6dc8173abd50f25b6e62fc5b42802c96fc7cd9deb9bfeeb10a79f5606225cdf4"},
+    {file = "google_auth-2.2.1-py2.py3-none-any.whl", hash = "sha256:2a92b485afed5292946b324e91fcbe03db277ee4cb64c998c6cfa66d4af01dee"},
 ]
 google-cloud-core = [
     {file = "google-cloud-core-2.0.0.tar.gz", hash = "sha256:90ee99648ccf9e11a16781a7fc58d13e58f662b439c737d48c24ef18662c2702"},
