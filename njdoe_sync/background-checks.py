@@ -10,6 +10,8 @@ import njdoe
 from dotenv import load_dotenv
 from google.cloud import storage
 
+from datarobot.utilities import email
+
 load_dotenv()
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
@@ -107,6 +109,9 @@ def main():
             print(f"{worker_id}\n\tERROR")
             print(xc)
             print(traceback.format_exc())
+            email_subject = f"NJDOE Background Check Error - {worker_id}"
+            email_body = f"{xc}\n\n{traceback.format_exc()}"
+            email.send_email(subject=email_subject, body=email_body)
 
 
 if __name__ == "__main__":
@@ -115,3 +120,6 @@ if __name__ == "__main__":
     except Exception as xc:
         print(xc)
         print(traceback.format_exc())
+        email_subject = "NJDOE Background Check Error"
+        email_body = f"{xc}\n\n{traceback.format_exc()}"
+        email.send_email(subject=email_subject, body=email_body)
