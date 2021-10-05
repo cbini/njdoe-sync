@@ -18,6 +18,7 @@ ADP_CLIENT_ID = os.getenv("ADP_CLIENT_ID")
 ADP_CLIENT_SECRET = os.getenv("ADP_CLIENT_SECRET")
 ADP_CERT_FILEPATH = os.getenv("ADP_CERT_FILEPATH")
 ADP_KEY_FILEPATH = os.getenv("ADP_KEY_FILEPATH")
+TARGET_STAFF_FILE = os.getenv("TARGET_STAFF_FILE")
 
 PROJECT_PATH = pathlib.Path(__file__).parent.absolute()
 NOW_TIMESTAMP = datetime.datetime.now()
@@ -28,6 +29,9 @@ import adp
 
 
 def main():
+    with open(TARGET_STAFF_FILE) as f:
+        staff = json.load(f)
+
     file_dir = PROJECT_PATH / "data" / "background_check"
     if not file_dir.exists():
         file_dir.mkdir(parents=True)
@@ -40,38 +44,25 @@ def main():
     gcs_client = storage.Client()
     gcs_bucket = gcs_client.bucket(GCS_BUCKET_NAME)
 
-    print("Downloading woker data from ADP...")
+    print("Downloading worker data from ADP...")
     querystring = {
         "$select": ",".join(
             [
                 "worker/person/governmentIDs",
                 "worker/person/birthDate",
-                "worker/customFieldGroup/stringFields",
-                "worker/workAssignments/homeOrganizationalUnits",
             ]
         ),
-        "$filter": "workers/workAssignments/assignmentStatus/statusCode/codeValue eq 'A'",
     }
-    all_staff = adp.get_all_records(adp_client, "/hr/v2/workers", querystring)
 
-    for p in all_staff:
-        home_org_units = next(
-            iter([w.get("homeOrganizationalUnits") for w in p.get("workAssignments")]),
-            None,
-        )
-        business_unit = next(
-            iter(
-                [
-                    u.get("nameCode").get("codeValue")
-                    for u in home_org_units
-                    if u.get("typeCode").get("codeValue") == "Business Unit"
-                ]
-            ),
-            None,
-        )
-        if not business_unit in ["KCNA", "KIPP_TAF", "TEAM"]:
-            continue
+    adp_staff = [
+        s
+        | adp.get_record(
+            adp_client, "/hr/v2/workers", querystring, id=s["associate_oid"]
+        )[0]
+        for s in staff
+    ]
 
+    for p in adp_staff:
         worker_id = p.get("workerID").get("idValue")
         govt_ids = p.get("person").get("governmentIDs")
         ssn = next(
@@ -85,23 +76,11 @@ def main():
             None,
         )
 
-        custom_fields_str = p.get("customFieldGroup").get("stringFields", [])
-        employee_number = next(
-            iter(
-                [
-                    sf.get("stringValue")
-                    for sf in custom_fields_str
-                    if sf.get("nameCode").get("codeValue") == "Employee Number"
-                ]
-            ),
-            None,
-        )
-
         birth_date = p.get("person").get("birthDate")
         dob = deque(birth_date.split("-"))
         dob.rotate(-1)
 
-        if not all([employee_number, ssn, dob]):
+        if not all([ssn, dob]):
             print(f"{worker_id}\n\tMISSING DATA")
             continue
 
@@ -111,9 +90,9 @@ def main():
             )
             if bg:
                 bg["worker_id"] = worker_id
-                bg["employee_number"] = employee_number
+                bg["employee_number"] = p["employee_number"]
 
-                file_name = f"njdoe_backround_check_records_{employee_number}.json"
+                file_name = f"njdoe_backround_check_records_{p['employee_number']}.json"
                 file_path = file_dir / file_name
                 with open(file_path, "w+") as f:
                     json.dump(bg, f)
