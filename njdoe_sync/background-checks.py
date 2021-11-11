@@ -3,6 +3,7 @@ import json
 import os
 import pathlib
 import sys
+import time
 import traceback
 from collections import deque
 
@@ -21,6 +22,7 @@ ADP_CLIENT_SECRET = os.getenv("ADP_CLIENT_SECRET")
 ADP_CERT_FILEPATH = os.getenv("ADP_CERT_FILEPATH")
 ADP_KEY_FILEPATH = os.getenv("ADP_KEY_FILEPATH")
 TARGET_STAFF_FILE = os.getenv("TARGET_STAFF_FILE")
+WAIT_TIME = int(os.getenv("WAIT_TIME"))
 
 PROJECT_PATH = pathlib.Path(__file__).parent.absolute()
 NOW_TIMESTAMP = datetime.datetime.now()
@@ -112,6 +114,8 @@ def main():
             email_subject = f"NJDOE Background Check Error - {worker_id}"
             email_body = f"{xc}\n\n{traceback.format_exc()}"
             email.send_email(subject=email_subject, body=email_body)
+        finally:
+            time.wait(WAIT_TIME)
 
 
 if __name__ == "__main__":
