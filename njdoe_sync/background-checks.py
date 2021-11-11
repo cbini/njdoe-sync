@@ -115,7 +115,7 @@ def main():
             email_body = f"{xc}\n\n{traceback.format_exc()}"
             email.send_email(subject=email_subject, body=email_body)
         finally:
-            time.wait(WAIT_TIME)
+            time.sleep(WAIT_TIME)
 
 
 if __name__ == "__main__":
