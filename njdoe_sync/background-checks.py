@@ -110,7 +110,7 @@ def main():
             print(xc)
             print(traceback.format_exc())
         finally:
-            time.wait(WAIT_TIME)
+            time.sleep(WAIT_TIME)
 
 
 if __name__ == "__main__":
