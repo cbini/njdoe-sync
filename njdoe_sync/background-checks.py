@@ -27,7 +27,7 @@ NOW_TIMESTAMP = datetime.datetime.now()
 NOW_DATE_ISO = NOW_TIMESTAMP.date().isoformat()
 
 sys.path.insert(0, ADP_MODULE_PATH)
-import adp
+import adp  # noqa: E402
 
 
 def main():
