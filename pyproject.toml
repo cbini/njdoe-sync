@@ -9,9 +9,9 @@ license-expression = "MIT"
 dependencies = [
     "njdoe>=0.1.0",
     "google-cloud-storage>=2.2.1",
-    "python-dotenv>=0.19.2",
     "oauthlib>=3.2.0",
     "requests-oauthlib>=1.3.1",
+    "setuptools>=60.10.0",
 ]
 requires-python = ">=3.9"
 
@@ -31,3 +31,7 @@ dev = [
 [build-system]
 requires = ["pdm-pep517>=0.12.0"]
 build-backend = "pdm.pep517.api"
+
+[tool.pdm.scripts]
+bg-check.cmd = "python njdoe_sync/background-checks.py"
+bg-check.env_file = ".env"

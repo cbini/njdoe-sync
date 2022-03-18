@@ -8,10 +8,7 @@ import traceback
 from collections import deque
 
 import njdoe
-from dotenv import load_dotenv
 from google.cloud import storage
-
-load_dotenv()
 
 GCS_BUCKET_NAME = os.getenv("GCS_BUCKET_NAME")
 ADP_MODULE_PATH = os.getenv("ADP_MODULE_PATH")
