@@ -31,5 +31,6 @@ requires = ["pdm-pep517>=0.12.0"]
 build-backend = "pdm.pep517.api"
 
 [tool.pdm.scripts]
+_.env_file = ".env"
 bg-check.cmd = "python njdoe_sync/background-checks.py"
-bg-check.env_file = ".env"
+bg-check.site_packages = true
